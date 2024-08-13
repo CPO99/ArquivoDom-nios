@@ -3,7 +3,7 @@ from apps.financeiro import models as modelsf
 from apps.admcore import models as modelsadm
 import re
 
-EMPRESA_ID = 185
+EMPRESA_ID = 1
 
 DATA_EMISSAO_INICIO = "2024-07-01"
 DATA_EMISSAO_FIM = "2024-07-31"
@@ -33,11 +33,11 @@ def ValidadorDados(VER, dado):
 def DataCasdatro(destinatario):
     return destinatario.cliente.data_cadastro
 
-def CodigoIBGE(cliente):
+def CodigoIBGE(CIDADE_CLIENTE):
     from apps.admcore import models
     from apps.admcore.templatetags.stringsutils import normalize
     
-    CIDADE_CLIENTE = models.Endereco.objects.get(cliente=cliente).cidade
+    #CIDADE_CLIENTE = models.Endereco.objects.get(cliente=cliente).cidade
     
     IBGE = "0000000"
     
@@ -78,7 +78,7 @@ for nota in NOTAS:
                 "NUMERO":"{}".format(ValidadorDados(1, nota.destinatario.numero)),
                 "COMPLEMENTO":"{}".format(ValidadorDados(1, nota.destinatario.complemento)),
                 "BAIRRO":"{}".format(nota.destinatario.bairro),
-                "IBGE":"{}".format(CodigoIBGE(nota.destinatario.cliente)),
+                "IBGE":"{}".format(CodigoIBGE(nota.destinatario.cidade)),
                 "UF":"{}".format(nota.destinatario.uf),
                 "CODIGO_PAIS":"1058",
                 "CEP":"{}".format(re.sub(r"[^\w\s]", "", nota.destinatario.cep)),
@@ -155,7 +155,7 @@ for nota in NOTAS:
                     "VALOR_CONTABIL":"{}".format(str(nota.valortotal).replace('.',',')),
                     "VALOR_EXCLUSAO_DIEF":"",
                     "OBSERVACAO":"",
-                    "IBGE":"{}".format(CodigoIBGE(nota.destinatario.cliente)),
+                    "IBGE":"{}".format(CodigoIBGE(nota.destinatario.cidade)),
                     "MODALIDADE_FRETE":"",
                     "CFOP_ESTENDIDO":"",
                     "CODIGO_TRANSF_CREDITO":"",
