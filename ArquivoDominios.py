@@ -8,14 +8,14 @@ EMPRESA_ID = 1
 DATA_EMISSAO_INICIO = "2024-07-01"
 DATA_EMISSAO_FIM = "2024-07-31"
 
-REGISTRO0000 = {"REGISTRO":"00000",
+REGISTRO0000 = {"REGISTRO":"0000",
                 "CNPJ":modelsadm.Empresa.objects.get(id=EMPRESA_ID).cpfcnpj}
 
 print "|{}|{}".format(REGISTRO0000["REGISTRO"], re.sub(r"[^\w\s]", "", REGISTRO0000["CNPJ"]))
 
 
 def ValidadorDados(VER, dado):
-	#validar existência
+	#validar existência do dado
     if VER == 1:
         if dado != None:
             return dado
@@ -64,6 +64,20 @@ def EmissaoInicioFim(VER, EMPRESAID, DATAINICIO, DATAFIM):
                                                 data_emissao__gte=DATAINICIO,
                                                 data_emissao__lte=DATAFIM).order_by("-data_emissao").first().data_emissao.strftime("%d/%m/%Y")
 
+def InscricaoMunicipalEstadual(ver, cliente):
+    import re
+    #Consultar IE
+    if ver == 1:
+        if cliente.pessoa.tipopessoa == "F":
+            return ""
+        else:
+            return re.sub(r"[^\w\s]", "", cliente.pessoa.insc_estadual)
+    #Consultar IM
+    else:
+        if cliente.pessoa.tipopessoa == "F":
+            return ""
+        else:
+            return re.sub(r"[^\w\s]", "", cliente.pessoa.insc_municipal)
 
 NOTAS = models.NotaFiscal.objects.filter(empresa_id=EMPRESA_ID,
                                              data_emissao__gte=DATA_EMISSAO_INICIO,
@@ -83,8 +97,8 @@ for nota in NOTAS:
                 "CODIGO_PAIS":"1058",
                 "CEP":"{}".format(re.sub(r"[^\w\s]", "", nota.destinatario.cep)),
                 "INSCRICAO_ESTADUAL":"",
-                "INSCRICAO_MUNICIPAL":"",
-                "INSCRICAO_SUFRAMA":"",
+                "INSCRICAO_MUNICIPAL":"{}".format(InscricaoMunicipalEstadual(1, nota.destinatario.cliente)),
+                "INSCRICAO_SUFRAMA":"{}".format(InscricaoMunicipalEstadual(2, nota.destinatario.cliente)),
                 "DDD":"",
                 "TELEFONE":"",
                 "FAX":"",
