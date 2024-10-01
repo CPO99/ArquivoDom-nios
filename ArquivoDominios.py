@@ -3,19 +3,27 @@ from apps.financeiro import models as modelsf
 from apps.admcore import models as modelsadm
 import re
 
+
 EMPRESA_ID = 1
 
-DATA_EMISSAO_INICIO = "2024-07-01"
-DATA_EMISSAO_FIM = "2024-07-31"
+DATA_EMISSAO_INICIO = "2024-09-01"
+DATA_EMISSAO_FIM = "2024-09-30"
 
-REGISTRO0000 = {"REGISTRO":"0000",
+global NUMERO_NOTA_FILTRAR
+global NUMERO_NOTA_RETIRAR_FILTRO
+
+NUMERO_NOTA_FILTRAR = [40593] #preencher somente se precisar retornar notas específicas no relatório
+NUMERO_NOTA_RETIRAR_FILTRO = [] #preencher somente se deseja retirar notas do relatório
+
+
+REGISTRO0000 = {"REGISTRO":"00000",
                 "CNPJ":modelsadm.Empresa.objects.get(id=EMPRESA_ID).cpfcnpj}
 
 print "|{}|{}".format(REGISTRO0000["REGISTRO"], re.sub(r"[^\w\s]", "", REGISTRO0000["CNPJ"]))
 
 
 def ValidadorDados(VER, dado):
-	#validar existência do dado
+	#validar existência
     if VER == 1:
         if dado != None:
             return dado
@@ -56,32 +64,35 @@ def EmissaoInicioFim(VER, EMPRESAID, DATAINICIO, DATAFIM):
     from apps.fiscal import models
     
     if VER == 1:
-        return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
-                                                data_emissao__gte=DATAINICIO,
-                                                data_emissao__lte=DATAFIM).order_by("data_emissao").first().data_emissao.strftime("%d/%m/%Y")
-    else:
-        return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
-                                                data_emissao__gte=DATAINICIO,
-                                                data_emissao__lte=DATAFIM).order_by("-data_emissao").first().data_emissao.strftime("%d/%m/%Y")
-
-def InscricaoMunicipalEstadual(ver, cliente):
-    import re
-    #Consultar IE
-    if ver == 1:
-        if cliente.pessoa.tipopessoa == "F":
-            return ""
+        if len(NUMERO_NOTA_FILTRAR) > 0:
+            return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
+                                                    data_emissao__gte=DATAINICIO,
+                                                    data_emissao__lte=DATAFIM,
+                                                    numero__in=NUMERO_NOTA_FILTRAR).order_by("data_emissao").first().data_emissao.strftime("%d/%m/%Y")
         else:
-            return re.sub(r"[^\w\s]", "", cliente.pessoa.insc_estadual)
-    #Consultar IM
+            return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
+                                                    data_emissao__gte=DATAINICIO,
+                                                    data_emissao__lte=DATAFIM).exclude(numero__in=NUMERO_NOTA_RETIRAR_FILTRO).order_by("data_emissao").first().data_emissao.strftime("%d/%m/%Y")
     else:
-        if cliente.pessoa.tipopessoa == "F":
-            return ""
+        if len(NUMERO_NOTA_FILTRAR) > 0:
+            return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
+                                                    data_emissao__gte=DATAINICIO,
+                                                    data_emissao__lte=DATAFIM,
+                                                    numero__in=NUMERO_NOTA_FILTRAR).order_by("-data_emissao").first().data_emissao.strftime("%d/%m/%Y")
         else:
-            return re.sub(r"[^\w\s]", "", cliente.pessoa.insc_municipal)
+            return models.NotaFiscal.objects.filter(empresa_id=EMPRESAID,
+                                                    data_emissao__gte=DATAINICIO,
+                                                    data_emissao__lte=DATAFIM).exclude(numero__in=NUMERO_NOTA_RETIRAR_FILTRO).order_by("-data_emissao").first().data_emissao.strftime("%d/%m/%Y")
 
-NOTAS = models.NotaFiscal.objects.filter(empresa_id=EMPRESA_ID,
+if len(NUMERO_NOTA_FILTRAR) > 0:
+    NOTAS = models.NotaFiscal.objects.filter(empresa_id=EMPRESA_ID,
                                              data_emissao__gte=DATA_EMISSAO_INICIO,
-                                             data_emissao__lte=DATA_EMISSAO_FIM).order_by("numero")
+                                             data_emissao__lte=DATA_EMISSAO_FIM,
+                                             numero__in=NUMERO_NOTA_FILTRAR).order_by("numero")
+else:
+    NOTAS = models.NotaFiscal.objects.filter(empresa_id=EMPRESA_ID,
+                                             data_emissao__gte=DATA_EMISSAO_INICIO,
+                                             data_emissao__lte=DATA_EMISSAO_FIM).exclude(numero__in=NUMERO_NOTA_RETIRAR_FILTRO).order_by("numero")
 #Registro 0010
 for nota in NOTAS:
     REGISTRO0010 = {"REGISTRO":"0010",
@@ -96,8 +107,8 @@ for nota in NOTAS:
                 "UF":"{}".format(nota.destinatario.uf),
                 "CODIGO_PAIS":"1058",
                 "CEP":"{}".format(re.sub(r"[^\w\s]", "", nota.destinatario.cep)),
-                "INSCRICAO_ESTADUAL":"{}".format(InscricaoMunicipalEstadual(1, nota.destinatario.cliente)),
-                "INSCRICAO_MUNICIPAL":"{}".format(InscricaoMunicipalEstadual(2, nota.destinatario.cliente)),
+                "INSCRICAO_ESTADUAL":"",
+                "INSCRICAO_MUNICIPAL":"",
                 "INSCRICAO_SUFRAMA":"",
                 "DDD":"",
                 "TELEFONE":"",
