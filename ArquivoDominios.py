@@ -373,4 +373,3 @@ for nota in NOTAS:
                                                 REGISTRO2081["SUB_SERIE"],
                                                 REGISTRO2081["EMITENTE"],
                                                 REGISTRO2081["CHAVE_NFE_CTE_SAIDA"])
-                                                
